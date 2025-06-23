@@ -1,3 +1,20 @@
-#SPDX-License-Identifier: MIT-0
 ---
-# defaults file for ansible-role-kubeadm
+# Role
+kubeadm_role: worker  # Options: control_plane, worker
+
+# Versions
+kubeadm_version: ""  # Empty means latest version
+
+# Cluster configuration
+kubeadm_pod_network: calico
+kubeadm_pod_network_cidr: 192.168.0.0/16
+kubeadm_service_cidr: 10.96.0.0/12
+kubeadm_apiserver_advertise_address: "{{ ansible_default_ipv4.address }}"
+kubeadm_control_plane_endpoint: "{{ kubeadm_apiserver_advertise_address }}:6443"
+kubeadm_token_ttl: "24h0m0s"
+
+# Cluster initialization
+kubeadm_init_cluster: false
+kubeadm_join_cluster: false
+kubeadm_save_join_command: true
+kubeadm_join_command_file: /tmp/kubeadm_join_cmd.sh

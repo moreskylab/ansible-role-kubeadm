@@ -1,0 +1,59 @@
+---
+- name: Create kubeadm config directory
+  file:
+    path: /etc/kubernetes
+    state: directory
+    mode: '0755'
+
+- name: Template kubeadm init config
+  template:
+    src: kubeadm-init.yml.j2
+    dest: /etc/kubernetes/kubeadm-init.yml
+    owner: root
+    group: root
+    mode: '0600'
+
+- name: Initialize Kubernetes control-plane
+  command: >
+    kubeadm init
+    --config=/etc/kubernetes/kubeadm-init.yml
+    --upload-certs
+  register: kubeadm_init
+  changed_when: kubeadm_init.rc == 0
+  failed_when:
+    - kubeadm_init.rc != 0
+    - "'already exists' not in kubeadm_init.stderr"
+
+- name: Create .kube directory for root user
+  file:
+    path: /root/.kube
+    state: directory
+    mode: '0700'
+
+- name: Copy kube admin config for root user
+  copy:
+    src: /etc/kubernetes/admin.conf
+    dest: /root/.kube/config
+    remote_src: yes
+    owner: root
+    group: root
+    mode: '0600'
+
+- name: Install pod network add-on (Calico)
+  command: >
+    kubectl apply -f {{ kubeadm_pod_network_manifest_url | default('https://docs.projectcalico.org/manifests/calico.yaml') }}
+  when: kubeadm_pod_network == "calico"
+  changed_when: false
+
+- name: Get join command
+  command: kubeadm token create --print-join-command
+  register: kubeadm_join_cmd
+  changed_when: false
+  when: kubeadm_save_join_command | bool
+
+- name: Save join command to a file
+  copy:
+    content: "{{ kubeadm_join_cmd.stdout }}"
+    dest: "{{ kubeadm_join_command_file | default('/tmp/kubeadm_join_cmd.sh') }}"
+    mode: '0600'
+  when: kubeadm_save_join_command | bool

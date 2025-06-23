@@ -1,8 +1,13 @@
 ---
 - name: Converge
   hosts: all
-  gather_facts: false
+  become: true
+  vars:
+    kubeadm_role: control_plane
+    kubeadm_init_cluster: false  # Don't actually init the cluster in tests
   tasks:
-    - name: Replace this task with one that validates your content
-      ansible.builtin.debug:
-        msg: "This is the effective test"
+    - name: Include kubeadm role
+      include_role:
+        name: kubeadm
+      vars:
+        kubeadm_version: ""  # Use latest for tests

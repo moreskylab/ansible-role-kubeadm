@@ -1,0 +1,48 @@
+---
+- name: Install required packages
+  package:
+    name:
+      - apt-transport-https
+      - ca-certificates
+      - curl
+      - gnupg
+      - lsb-release
+    state: present
+  when: ansible_os_family == "Debian"
+
+- name: Add Kubernetes apt key
+  apt_key:
+    url: https://packages.cloud.google.com/apt/doc/apt-key.gpg
+    state: present
+  when: ansible_os_family == "Debian"
+
+- name: Add Kubernetes repository
+  apt_repository:
+    repo: deb https://apt.kubernetes.io/ kubernetes-xenial main
+    state: present
+    filename: kubernetes
+  when: ansible_os_family == "Debian"
+
+- name: Install containerd
+  package:
+    name: containerd.io
+    state: present
+
+- name: Install kubeadm, kubelet, kubectl
+  package:
+    name:
+      - kubelet={{ kubeadm_version | default('') }}
+      - kubeadm={{ kubeadm_version | default('') }}
+      - kubectl={{ kubeadm_version | default('') }}
+    state: present
+  notify: restart kubelet
+
+- name: Hold kubeadm packages
+  dpkg_selections:
+    name: "{{ item }}"
+    selection: hold
+  loop:
+    - kubelet
+    - kubeadm
+    - kubectl
+  when: ansible_os_family == "Debian"

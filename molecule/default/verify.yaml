@@ -1,0 +1,57 @@
+---
+- name: Verify
+  hosts: all
+  become: true
+  gather_facts: false
+  tasks:
+    - name: Check if kubelet package is installed
+      package_facts:
+        manager: auto
+
+    - name: Verify kubelet is installed
+      assert:
+        that:
+          - "'kubelet' in ansible_facts.packages"
+        fail_msg: "kubelet is not installed"
+        success_msg: "kubelet is installed correctly"
+
+    - name: Verify kubeadm is installed
+      assert:
+        that:
+          - "'kubeadm' in ansible_facts.packages"
+        fail_msg: "kubeadm is not installed"
+        success_msg: "kubeadm is installed correctly"
+
+    - name: Verify kubectl is installed
+      assert:
+        that:
+          - "'kubectl' in ansible_facts.packages"
+        fail_msg: "kubectl is not installed"
+        success_msg: "kubectl is installed correctly"
+
+    - name: Check if containerd service is running
+      service_facts:
+
+    - name: Verify containerd service is running and enabled
+      assert:
+        that:
+          - ansible_facts.services['containerd.service'].state == 'running'
+          - ansible_facts.services['containerd.service'].status == 'enabled'
+        fail_msg: "containerd service is not running or not enabled"
+        success_msg: "containerd service is running and enabled"
+
+    - name: Check if required kernel modules are loaded
+      shell: "lsmod | grep {{ item }}"
+      register: modules_check
+      changed_when: false
+      failed_when: false
+      loop:
+        - overlay
+        - br_netfilter
+
+    - name: Verify required kernel modules are loaded
+      assert:
+        that: item.rc == 0
+        fail_msg: "Required kernel module {{ item.item }} is not loaded"
+        success_msg: "Required kernel module {{ item.item }} is loaded"
+      loop: "{{ modules_check.results }}"
