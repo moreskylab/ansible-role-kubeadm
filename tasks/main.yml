@@ -1,3 +1,26 @@
-#SPDX-License-Identifier: MIT-0
 ---
-# tasks file for ansible-role-kubeadm
+- name: Include OS-specific variables
+  include_vars: "{{ ansible_os_family }}.yml"
+  tags: [always]
+
+- name: Set up prerequisites
+  include_tasks: prerequisites.yml
+  tags: [prerequisites]
+
+- name: Install kubeadm and dependencies
+  include_tasks: install.yml
+  tags: [install]
+
+- name: Configure system for Kubernetes
+  include_tasks: configure.yml
+  tags: [configure]
+
+- name: Initialize Kubernetes cluster
+  include_tasks: init_cluster.yml
+  when: kubeadm_role == "control_plane" and kubeadm_init_cluster | bool
+  tags: [init]
+
+- name: Join Kubernetes cluster
+  include_tasks: join_cluster.yml
+  when: kubeadm_role == "worker" and kubeadm_join_cluster | bool
+  tags: [join]
