@@ -1,8 +1,20 @@
 ---
-- name: Converge
-  hosts: all
-  gather_facts: false
-  tasks:
-    - name: Replace this task with one that validates your content
-      ansible.builtin.debug:
-        msg: "This is the effective test"
+dependency:
+  name: galaxy
+driver:
+  name: docker
+platforms:
+  - name: instance
+    image: geerlingguy/docker-ubuntu2004-ansible:latest
+    pre_build_image: true
+    privileged: true
+    command: ""
+    volumes:
+      - /sys/fs/cgroup:/sys/fs/cgroup:rw
+    cgroupns_mode: host
+provisioner:
+  name: ansible
+  lint:
+    name: ansible-lint
+verifier:
+  name: ansible
